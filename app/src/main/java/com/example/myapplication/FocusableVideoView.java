@@ -25,4 +25,12 @@ public class FocusableVideoView extends VideoView {
     public void setSearchButton(Button button) {
         this.searchButton = button;
     }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int height = MeasureSpec.getSize(heightMeasureSpec);
+        setMeasuredDimension(width, height);
+    }
 }
