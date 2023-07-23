@@ -14,6 +14,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -69,7 +71,12 @@ public class MainActivity extends AppCompatActivity {
 
         searchButton.setOnClickListener(v -> {
             String query = searchEditText.getText().toString();
-            String url = "https://j3tsk1.pythonanywhere.com/api/" + query;
+            try {
+                query = URLEncoder.encode(query, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            String url = "https://j3tsk1.pythonanywhere.com/api/?q=" + query;
             videoView.setVideoURI(Uri.parse(url));
         });
 
