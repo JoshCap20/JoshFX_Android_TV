@@ -3,25 +3,17 @@ package com.example.myapplication;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.VideoView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,10 +21,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         Button searchButton = findViewById(R.id.btnSearch);
+        FocusableVideoView videoView = findViewById(R.id.videoView);
         EditText searchEditText = findViewById(R.id.edtSearch);
-        VideoView videoView = findViewById(R.id.videoView);
+        videoView.setSearchEditText(searchEditText);
+
 
         videoView.setOnErrorListener((mp, what, extra) -> {
             Log.e("MainActivity", "Video player error: " + what);
@@ -50,22 +43,19 @@ public class MainActivity extends AppCompatActivity {
             videoView.start();
         });
 
-        videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                mp.setLooping(true);
+        videoView.setOnPreparedListener(mp -> {
+            mp.setLooping(true);
 
-                mp.setOnBufferingUpdateListener((mp1, percent) -> {
-                    // percent is the buffering progress from 0 to 100
-                    Log.d("Buffering", "Buffering progress: " + percent + "%");
-                });
+            mp.setOnBufferingUpdateListener((mp1, percent) -> {
+                // percent is the buffering progress from 0 to 100
+                Log.d("Buffering", "Buffering progress: " + percent + "%");
+            });
 
-                // Hide the search bar views
-                searchButton.setVisibility(View.GONE);
-                searchEditText.setVisibility(View.GONE);
+            // Hide the search bar views
+            searchButton.setVisibility(View.GONE);
+            searchEditText.setVisibility(View.GONE);
 
-                videoView.start();
-            }
+            videoView.start();
         });
 
 
@@ -86,17 +76,20 @@ public class MainActivity extends AppCompatActivity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         View searchButton = findViewById(R.id.btnSearch);
         View searchEditText = findViewById(R.id.edtSearch);
-        if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && event.getAction() == KeyEvent.ACTION_DOWN) {
             if (searchButton.getVisibility() != View.VISIBLE || searchEditText.getVisibility() != View.VISIBLE) {
                 searchButton.setVisibility(View.VISIBLE);
                 searchEditText.setVisibility(View.VISIBLE);
                 return true;
             }
         }
-        if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && event.getAction() == KeyEvent.ACTION_DOWN) {
             if (searchButton.getVisibility() == View.VISIBLE || searchEditText.getVisibility() == View.VISIBLE) {
-                searchButton.setVisibility(View.GONE);
-                searchEditText.setVisibility(View.GONE);
+                // Add a delay before hiding the search bar
+                new Handler().postDelayed(() -> {
+                    searchButton.setVisibility(View.GONE);
+                    searchEditText.setVisibility(View.GONE);
+                }, 1000);  // delay of 1 second
                 return true;
             }
         }

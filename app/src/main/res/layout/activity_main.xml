@@ -5,10 +5,12 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <VideoView
+    <com.example.myapplication.FocusableVideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_below="@+id/btnSearch"
+        tools:ignore="NotSibling" />
 
     <RelativeLayout
         android:id="@+id/searchLayout"
