@@ -41,7 +41,9 @@ public class MainActivity extends AppCompatActivity {
         searchEditText = findViewById(R.id.edtSearch);
         searchButton = findViewById(R.id.btnSearch);
         videoView = findViewById(R.id.videoView);
+        pauseButton = findViewById(R.id.btnPause);
 
+        pauseButton.setVisibility(View.GONE);
         videoView.setSearchButton(searchButton);
 
         videoView.setOnErrorListener((mp, what, extra) -> {
@@ -71,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
             // Hide the search bar views
             searchButton.setVisibility(View.GONE);
             searchEditText.setVisibility(View.GONE);
+            pauseButton.setVisibility(View.GONE);
 
             videoView.start();
         });
@@ -86,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-        pauseButton = findViewById(R.id.btnPause);
         pauseButton.setOnClickListener(v -> {
             if(videoView.isPlaying()){
                 videoView.pause();
@@ -105,6 +107,12 @@ public class MainActivity extends AppCompatActivity {
             if (searchButton.getVisibility() != View.VISIBLE || searchEditText.getVisibility() != View.VISIBLE) {
                 searchButton.setVisibility(View.VISIBLE);
                 searchEditText.setVisibility(View.VISIBLE);
+                pauseButton.setVisibility(View.GONE);
+                return true;
+            } else if (pauseButton.isFocused()) {
+                // If the VideoView is focused, show the Pause button
+                pauseButton.setVisibility(View.GONE);
+                videoView.requestFocus();
                 return true;
             }
         }
@@ -115,6 +123,13 @@ public class MainActivity extends AppCompatActivity {
                     searchButton.setVisibility(View.GONE);
                     searchEditText.setVisibility(View.GONE);
                 }, 500);  // delay of 1 second
+                return true;
+            } else if (videoView.isFocused()) {
+                // If the VideoView is focused, show the Pause button
+                searchButton.setVisibility(View.GONE);
+                searchEditText.setVisibility(View.GONE);
+                pauseButton.setVisibility(View.VISIBLE);
+                pauseButton.requestFocus();
                 return true;
             }
         }
