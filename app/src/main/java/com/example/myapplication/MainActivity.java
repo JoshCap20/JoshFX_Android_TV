@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         searchButton = findViewById(R.id.btnSearch);
 
         playerView = findViewById(R.id.player_view);
+        playerView.setKeepScreenOn(true);
         player = new SimpleExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
 
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        playerView.setKeepScreenOn(false);
         if (player != null) {
             player.release();
             player = null;
