@@ -139,10 +139,10 @@ public class MainActivity extends AppCompatActivity {
     class RetrieveFeedTask extends AsyncTask<String, Void, List<Movie>> {
         protected List<Movie> doInBackground(String... urls) {
             List<Movie> movies = new ArrayList<>();
-
+            HttpURLConnection conn = null;
             try {
                 URL apiURL = new URL(urls[0]);
-                HttpURLConnection conn = (HttpURLConnection) apiURL.openConnection();
+                conn = (HttpURLConnection) apiURL.openConnection();
                 conn.setRequestMethod("GET");
 
                 // Read the response
@@ -167,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                conn.disconnect();
             }
 
             return movies;
