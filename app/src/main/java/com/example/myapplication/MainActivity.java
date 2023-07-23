@@ -160,6 +160,9 @@ public class MainActivity extends AppCompatActivity {
                 player.setMediaItem(mediaItem);
                 player.prepare();
                 player.play();
+
+                searchButton.setVisibility(View.GONE);
+                searchEditText.setVisibility(View.GONE);
             });
 
             builder.show();

@@ -1,4 +1,6 @@
 <resources>
-
-    <style name="Theme.MyApplication" parent="Theme.AppCompat.Light.DarkActionBar" />
+    <style name="Theme.MyApplication" parent="Theme.AppCompat.Light.DarkActionBar">
+    <item name="android:windowFullscreen">true</item>
+    <item name="android:windowBackground">@android:color/black</item>
+    </style>
 </resources>
