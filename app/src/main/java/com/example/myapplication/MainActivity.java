@@ -1,7 +1,9 @@
 package com.example.myapplication;
 
+import android.app.AlertDialog;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -12,8 +14,17 @@ import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,18 +76,15 @@ public class MainActivity extends AppCompatActivity {
 
 
         searchButton.setOnClickListener(v -> {
-            String query = searchEditText.getText().toString();
-            try {
-                query = URLEncoder.encode(query, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-            String url = "https://j3tsk1.pythonanywhere.com/api/?q=" + query;
-            videoView.setVideoURI(Uri.parse(url));
-        });
-
+                try {
+                    String query = URLEncoder.encode(searchEditText.getText().toString(), "UTF-8");
+                    String url = "https://j3tsk1.pythonanywhere.com/results/?q=" + query;
+                    new RetrieveFeedTask().execute(url);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+            });
     }
-
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         View searchButton = findViewById(R.id.btnSearch);
@@ -101,6 +109,66 @@ public class MainActivity extends AppCompatActivity {
         return super.dispatchKeyEvent(event);
     }
 
-}
+    class RetrieveFeedTask extends AsyncTask<String, Void, List<Movie>> {
+        protected List<Movie> doInBackground(String... urls) {
+            List<Movie> movies = new ArrayList<>();
 
+            try {
+                URL apiURL = new URL(urls[0]);
+                HttpURLConnection conn = (HttpURLConnection) apiURL.openConnection();
+                conn.setRequestMethod("GET");
+
+                // Read the response
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line;
+                StringBuilder response = new StringBuilder();
+                while ((line = in.readLine()) != null) {
+                    response.append(line);
+                }
+                in.close();
+                conn.disconnect();
+
+                // Parse JSON
+                JSONArray jsonArray = new JSONArray(response.toString());
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    Movie movie = new Movie(
+                            jsonObject.getInt("id"),
+                            jsonObject.getString("title"),
+                            jsonObject.getString("link"));
+                    movies.add(movie);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return movies;
+        }
+
+        protected void onPostExecute(List<Movie> movies) {
+            // Use the movies to populate an AlertDialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Select a Movie");
+
+            CharSequence[] sequence = new CharSequence[movies.size()];
+            for (int i = 0; i < movies.size(); i++) {
+                sequence[i] = movies.get(i).getTitle();
+            }
+
+            builder.setItems(sequence, (dialog, which) -> {
+                // Get the selected movie
+                Movie selectedMovie = movies.get(which);
+
+                // Play the video
+                videoView.setVideoURI(Uri.parse(selectedMovie.getLink()));
+                videoView.start();
+            });
+
+            builder.show();
+        }
+    }
+
+
+
+}
 
