@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@+id/btnSearch"
+        android:nextFocusUp="@+id/edtSearch"
         tools:ignore="NotSibling" />
 
     <RelativeLayout
@@ -23,14 +24,18 @@
             android:id="@+id/edtSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter search query" />
+            android:hint="Enter search query"
+            android:nextFocusDown="@+id/btnSearch"
+            android:nextFocusUp="@+id/videoView"/>
 
         <Button
             android:id="@+id/btnSearch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/edtSearch"
-            android:text="Search" />
+            android:text="Search"
+            android:nextFocusDown="@+id/videoView"
+            android:nextFocusUp="@+id/edtSearch"/>
 
     </RelativeLayout>
 </RelativeLayout>

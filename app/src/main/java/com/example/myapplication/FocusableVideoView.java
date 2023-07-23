@@ -3,6 +3,7 @@ package com.example.myapplication;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.VideoView;
 
@@ -19,18 +20,9 @@ public class FocusableVideoView extends VideoView {
         super(context, attrs, defStyleAttr);
     }
 
-    private EditText searchEditText;
+    private Button searchButton;
 
-    public void setSearchEditText(EditText editText) {
-        this.searchEditText = editText;
-    }
-
-    @Override
-    public View focusSearch(int direction) {
-        if (direction == View.FOCUS_UP) {
-            // return the EditText to get focus when the UP key is pressed
-            return searchEditText;
-        }
-        return super.focusSearch(direction);
+    public void setSearchButton(Button button) {
+        this.searchButton = button;
     }
 }

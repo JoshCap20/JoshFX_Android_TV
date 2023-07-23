@@ -17,15 +17,20 @@ import java.net.URLEncoder;
 
 public class MainActivity extends AppCompatActivity {
 
+    private EditText searchEditText;
+    private Button searchButton;
+    private FocusableVideoView videoView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Button searchButton = findViewById(R.id.btnSearch);
-        FocusableVideoView videoView = findViewById(R.id.videoView);
-        EditText searchEditText = findViewById(R.id.edtSearch);
-        videoView.setSearchEditText(searchEditText);
 
+        searchEditText = findViewById(R.id.edtSearch);
+        searchButton = findViewById(R.id.btnSearch);
+        videoView = findViewById(R.id.videoView);
+
+        videoView.setSearchButton(searchButton);
 
         videoView.setOnErrorListener((mp, what, extra) -> {
             Log.e("MainActivity", "Video player error: " + what);
@@ -84,12 +89,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && event.getAction() == KeyEvent.ACTION_DOWN) {
-            if (searchButton.getVisibility() == View.VISIBLE || searchEditText.getVisibility() == View.VISIBLE) {
+            if (searchButton.isFocused()) {
                 // Add a delay before hiding the search bar
                 new Handler().postDelayed(() -> {
                     searchButton.setVisibility(View.GONE);
                     searchEditText.setVisibility(View.GONE);
-                }, 1000);  // delay of 1 second
+                }, 500);  // delay of 1 second
                 return true;
             }
         }
