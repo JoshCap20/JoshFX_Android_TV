@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText searchEditText;
     private Button searchButton;
     private FocusableVideoView videoView;
+    private Button pauseButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +85,17 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             });
+
+        pauseButton = findViewById(R.id.btnPause);
+        pauseButton.setOnClickListener(v -> {
+            if(videoView.isPlaying()){
+                videoView.pause();
+                pauseButton.setText("Play");
+            }else{
+                videoView.start();
+                pauseButton.setText("Pause");
+            }
+        });
     }
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
