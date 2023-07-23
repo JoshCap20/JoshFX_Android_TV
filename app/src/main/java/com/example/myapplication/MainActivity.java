@@ -1,7 +1,6 @@
 package com.example.myapplication;
 
 import android.app.AlertDialog;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -13,6 +12,13 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.ui.PlayerView;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,79 +32,50 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private EditText searchEditText;
     private Button searchButton;
-    private FocusableVideoView videoView;
-    private Button pauseButton;
+    private PlayerView playerView;
+    private SimpleExoPlayer player;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         searchEditText = findViewById(R.id.edtSearch);
         searchButton = findViewById(R.id.btnSearch);
-        videoView = findViewById(R.id.videoView);
-        pauseButton = findViewById(R.id.btnPause);
 
-        pauseButton.setVisibility(View.GONE);
-        videoView.setSearchButton(searchButton);
+        playerView = findViewById(R.id.player_view);
+        player = new SimpleExoPlayer.Builder(this).build();
+        playerView.setPlayer(player);
 
-        videoView.setOnErrorListener((mp, what, extra) -> {
-            Log.e("MainActivity", "Video player error: " + what);
-            return true; // True if the method handled the error
-        });
-
-        videoView.setOnPreparedListener(mp -> {
-            mp.setLooping(true);
-
-            mp.setOnBufferingUpdateListener((mp1, percent) -> {
-                // percent is the buffering progress from 0 to 100
-                Log.d("Buffering", "Buffering progress: " + percent + "%");
-            });
-
-            videoView.start();
-        });
-
-        videoView.setOnPreparedListener(mp -> {
-            mp.setLooping(true);
-
-            mp.setOnBufferingUpdateListener((mp1, percent) -> {
-                // percent is the buffering progress from 0 to 100
-                Log.d("Buffering", "Buffering progress: " + percent + "%");
-            });
-
-            // Hide the search bar views
-            searchButton.setVisibility(View.GONE);
-            searchEditText.setVisibility(View.GONE);
-            pauseButton.setVisibility(View.GONE);
-
-            videoView.start();
-        });
-
+        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(this,
+                Util.getUserAgent(this, "JoshFX"));
 
         searchButton.setOnClickListener(v -> {
-                try {
-                    String query = URLEncoder.encode(searchEditText.getText().toString(), "UTF-8");
-                    String url = "https://j3tsk1.pythonanywhere.com/results/?q=" + query;
-                    new RetrieveFeedTask().execute(url);
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-            });
-
-        pauseButton.setOnClickListener(v -> {
-            if(videoView.isPlaying()){
-                videoView.pause();
-                pauseButton.setText("Play");
-            }else{
-                videoView.start();
-                pauseButton.setText("Pause");
+            try {
+                String query = URLEncoder.encode(searchEditText.getText().toString(), "UTF-8");
+                String url = "https://j3tsk1.pythonanywhere.com/results/?q=" + query;
+                new RetrieveFeedTask().execute(url);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
             }
         });
+
     }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (player != null) {
+            player.release();
+            player = null;
+        }
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         View searchButton = findViewById(R.id.btnSearch);
@@ -107,12 +84,6 @@ public class MainActivity extends AppCompatActivity {
             if (searchButton.getVisibility() != View.VISIBLE || searchEditText.getVisibility() != View.VISIBLE) {
                 searchButton.setVisibility(View.VISIBLE);
                 searchEditText.setVisibility(View.VISIBLE);
-                pauseButton.setVisibility(View.GONE);
-                return true;
-            } else if (pauseButton.isFocused()) {
-                // If the VideoView is focused, show the Pause button
-                pauseButton.setVisibility(View.GONE);
-                videoView.requestFocus();
                 return true;
             }
         }
@@ -124,12 +95,10 @@ public class MainActivity extends AppCompatActivity {
                     searchEditText.setVisibility(View.GONE);
                 }, 500);  // delay of 1 second
                 return true;
-            } else if (videoView.isFocused()) {
+            } else if (playerView.isFocused()) {
                 // If the VideoView is focused, show the Pause button
                 searchButton.setVisibility(View.GONE);
                 searchEditText.setVisibility(View.GONE);
-                pauseButton.setVisibility(View.VISIBLE);
-                pauseButton.requestFocus();
                 return true;
             }
         }
@@ -152,8 +121,8 @@ public class MainActivity extends AppCompatActivity {
                 while ((line = in.readLine()) != null) {
                     response.append(line);
                 }
+                Log.d("API Response", response.toString());
                 in.close();
-                conn.disconnect();
 
                 // Parse JSON
                 JSONArray jsonArray = new JSONArray(response.toString());
@@ -162,7 +131,8 @@ public class MainActivity extends AppCompatActivity {
                     Movie movie = new Movie(
                             jsonObject.getInt("id"),
                             jsonObject.getString("title"),
-                            jsonObject.getString("link"));
+                            jsonObject.getString("link"),
+                            jsonObject.getString("stream"));
                     movies.add(movie);
                 }
             } catch (Exception e) {
@@ -185,18 +155,16 @@ public class MainActivity extends AppCompatActivity {
             }
 
             builder.setItems(sequence, (dialog, which) -> {
-                // Get the selected movie
                 Movie selectedMovie = movies.get(which);
-
-                // Play the video
-                videoView.setVideoURI(Uri.parse(selectedMovie.getLink()));
-                videoView.start();
+                MediaItem mediaItem = MediaItem.fromUri(Uri.parse(selectedMovie.getStream()));
+                player.setMediaItem(mediaItem);
+                player.prepare();
+                player.play();
             });
 
             builder.show();
         }
     }
-
 
 
 }
