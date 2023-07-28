@@ -26,16 +26,29 @@
             android:layout_height="wrap_content"
             android:hint="Enter search query"
             android:nextFocusDown="@+id/btnSearch"
-            android:nextFocusUp="@+id/videoView"/>
+            android:nextFocusUp="@+id/videoView" />
 
-        <Button
-            android:id="@+id/btnSearch"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/edtSearch"
-            android:text="Search"
-            android:nextFocusDown="@+id/videoView"
-            android:nextFocusUp="@+id/edtSearch"/>
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Search"
+                android:nextFocusDown="@+id/videoView"
+                android:nextFocusUp="@+id/edtSearch"/>
+
+            <TextView
+                android:id="@+id/movieTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+        </LinearLayout>
 
     </RelativeLayout>
 

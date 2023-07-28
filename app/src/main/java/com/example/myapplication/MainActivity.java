@@ -10,6 +10,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -37,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     private EditText searchEditText;
     private Button searchButton;
+    private TextView movieTitle;
     private PlayerView playerView;
     private SimpleExoPlayer player;
 
@@ -46,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         searchEditText = findViewById(R.id.edtSearch);
         searchButton = findViewById(R.id.btnSearch);
+        movieTitle = findViewById(R.id.movieTitle);
 
         playerView = findViewById(R.id.player_view);
         playerView.setKeepScreenOn(true);
@@ -62,6 +65,11 @@ public class MainActivity extends AppCompatActivity {
                 new RetrieveFeedTask().execute(url);
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
+                String errorMsg = "Error: " + e.getMessage();
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("Error");
+                builder.setMessage(errorMsg);
+                builder.show();
             }
         });
 
@@ -86,21 +94,22 @@ public class MainActivity extends AppCompatActivity {
             if (searchButton.getVisibility() != View.VISIBLE || searchEditText.getVisibility() != View.VISIBLE) {
                 searchButton.setVisibility(View.VISIBLE);
                 searchEditText.setVisibility(View.VISIBLE);
+                movieTitle.setVisibility(View.VISIBLE);
                 return true;
             }
         }
         if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && event.getAction() == KeyEvent.ACTION_DOWN) {
             if (searchButton.isFocused()) {
-                // Add a delay before hiding the search bar
                 new Handler().postDelayed(() -> {
                     searchButton.setVisibility(View.GONE);
                     searchEditText.setVisibility(View.GONE);
+                    movieTitle.setVisibility(View.GONE);
                 }, 500);  // delay of 1 second
                 return true;
             } else if (playerView.isFocused()) {
-                // If the VideoView is focused, show the Pause button
                 searchButton.setVisibility(View.GONE);
                 searchEditText.setVisibility(View.GONE);
+                movieTitle.setVisibility(View.GONE);
                 return true;
             }
         }
@@ -157,14 +166,22 @@ public class MainActivity extends AppCompatActivity {
             }
 
             builder.setItems(sequence, (dialog, which) -> {
-                Movie selectedMovie = movies.get(which);
-                MediaItem mediaItem = MediaItem.fromUri(Uri.parse(selectedMovie.getStream()));
-                player.setMediaItem(mediaItem);
-                player.prepare();
-                player.play();
+                try {
+                    Movie selectedMovie = movies.get(which);
+                    MediaItem mediaItem = MediaItem.fromUri(Uri.parse(selectedMovie.getStream()));
+                    player.setMediaItem(mediaItem);
+                    player.prepare();
+                    player.play();
+                    movieTitle.setText(selectedMovie.getTitle());
+                } catch (Exception e) {
+                    AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
+                    builder1.setTitle("Error");
+                    builder1.setMessage("Please try again");
+                }
 
                 searchButton.setVisibility(View.GONE);
                 searchEditText.setVisibility(View.GONE);
+                movieTitle.setVisibility(View.GONE);
             });
 
             builder.show();
