@@ -1,4 +1,4 @@
-package com.example.myapplication;
+package com.example.joshfx;
 
 public class Movie {
     private int id;
