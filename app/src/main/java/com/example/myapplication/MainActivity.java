@@ -92,24 +92,18 @@ public class MainActivity extends AppCompatActivity {
         View searchEditText = findViewById(R.id.edtSearch);
         if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && event.getAction() == KeyEvent.ACTION_DOWN) {
             if (searchButton.getVisibility() != View.VISIBLE || searchEditText.getVisibility() != View.VISIBLE) {
-                searchButton.setVisibility(View.VISIBLE);
-                searchEditText.setVisibility(View.VISIBLE);
-                movieTitle.setVisibility(View.VISIBLE);
+                showSearchInterface();
                 return true;
             }
         }
         if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && event.getAction() == KeyEvent.ACTION_DOWN) {
             if (searchButton.isFocused()) {
                 new Handler().postDelayed(() -> {
-                    searchButton.setVisibility(View.GONE);
-                    searchEditText.setVisibility(View.GONE);
-                    movieTitle.setVisibility(View.GONE);
+                    hideSearchInterface();
                 }, 500);  // delay of 1 second
                 return true;
             } else if (playerView.isFocused()) {
-                searchButton.setVisibility(View.GONE);
-                searchEditText.setVisibility(View.GONE);
-                movieTitle.setVisibility(View.GONE);
+                hideSearchInterface();
                 return true;
             }
         }
@@ -169,9 +163,16 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     Movie selectedMovie = movies.get(which);
                     MediaItem mediaItem = MediaItem.fromUri(Uri.parse(selectedMovie.getStream()));
-                    player.setMediaItem(mediaItem);
-                    player.prepare();
-                    player.play();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            player.setMediaItem(mediaItem);
+                            player.prepare();
+                            player.play();
+                        }
+                    });
+
                     movieTitle.setText(selectedMovie.getTitle());
                 } catch (Exception e) {
                     AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
@@ -179,13 +180,26 @@ public class MainActivity extends AppCompatActivity {
                     builder1.setMessage("Please try again");
                 }
 
-                searchButton.setVisibility(View.GONE);
-                searchEditText.setVisibility(View.GONE);
-                movieTitle.setVisibility(View.GONE);
+                hideSearchInterface();
             });
 
             builder.show();
         }
+    }
+
+    private void hideSearchInterface() {
+        searchButton.setVisibility(View.GONE);
+        searchEditText.setVisibility(View.GONE);
+        movieTitle.setVisibility(View.GONE);
+        searchButton.clearFocus();
+        searchEditText.clearFocus();
+    }
+
+    private void showSearchInterface() {
+        searchButton.setVisibility(View.VISIBLE);
+        searchEditText.setVisibility(View.VISIBLE);
+        movieTitle.setVisibility(View.VISIBLE);
+        searchEditText.requestFocus();
     }
 
 
