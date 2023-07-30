@@ -14,20 +14,26 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -49,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
         searchEditText = findViewById(R.id.edtSearch);
         searchButton = findViewById(R.id.btnSearch);
         movieTitle = findViewById(R.id.movieTitle);
-
         playerView = findViewById(R.id.player_view);
+
         playerView.setKeepScreenOn(true);
         player = new SimpleExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
@@ -65,11 +71,25 @@ public class MainActivity extends AppCompatActivity {
                 new RetrieveFeedTask().execute(url);
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
-                String errorMsg = "Error: " + e.getMessage();
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("Error");
-                builder.setMessage(errorMsg);
-                builder.show();
+                showError("Error", e.getMessage());
+            }
+        });
+
+        player.addListener(new Player.Listener() {
+            public void onPlayerError(ExoPlaybackException error) {
+                if (error.type == ExoPlaybackException.TYPE_SOURCE) {
+                    IOException cause = error.getSourceException();
+                    if (cause instanceof HttpDataSource.HttpDataSourceException) {
+                        // A network error occurred when trying to load data through a network connection.
+                        HttpDataSource.HttpDataSourceException httpError = (HttpDataSource.HttpDataSourceException) cause;
+                        Throwable rootCause = httpError.getCause();
+                        if (rootCause instanceof SocketTimeoutException) {
+                            showError("Network Error", "The connection has timed out. Please check your network connection or try again later.");
+                        } else if (rootCause instanceof SocketException && rootCause.getMessage().equals("socket is closed")) {
+                            showError("Network Error", "Socket is closed. Please check your network connection or try again later.");
+                        }
+                    }
+                }
             }
         });
 
@@ -100,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             if (searchButton.isFocused()) {
                 new Handler().postDelayed(() -> {
                     hideSearchInterface();
-                }, 500);  // delay of 1 second
+                }, 500);
                 return true;
             } else if (playerView.isFocused()) {
                 hideSearchInterface();
@@ -140,10 +160,19 @@ public class MainActivity extends AppCompatActivity {
                             jsonObject.getString("stream"));
                     movies.add(movie);
                 }
+            } catch (SocketTimeoutException e) {
+                e.printStackTrace();
+                showError("Network Error", "The connection has timed out. Please check your network connection or try again later.");
+            } catch (SocketException e) {
+                e.printStackTrace();
+                showError("Network Error", "Socket is closed. Please check your network connection or try again later.");
             } catch (Exception e) {
                 e.printStackTrace();
+                showError("Error", e.getMessage());
             } finally {
-                conn.disconnect();
+                if (conn != null) {
+                    conn.disconnect();
+                }
             }
 
             return movies;
@@ -175,9 +204,7 @@ public class MainActivity extends AppCompatActivity {
 
                     movieTitle.setText(selectedMovie.getTitle());
                 } catch (Exception e) {
-                    AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
-                    builder1.setTitle("Error");
-                    builder1.setMessage("Please try again");
+                    showError("Error", e.getMessage());
                 }
 
                 hideSearchInterface();
@@ -185,6 +212,19 @@ public class MainActivity extends AppCompatActivity {
 
             builder.show();
         }
+    }
+
+    void showError(String title, String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle(title);
+                builder.setMessage(message);
+                builder.setPositiveButton("OK", null);
+                builder.show();
+            }
+        });
     }
 
     private void hideSearchInterface() {
@@ -201,7 +241,5 @@ public class MainActivity extends AppCompatActivity {
         movieTitle.setVisibility(View.VISIBLE);
         searchEditText.requestFocus();
     }
-
-
 }
 
