@@ -1,6 +1,7 @@
-package com.example.myapplication;
+package com.example.joshfx;
 
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView movieTitle;
     private PlayerView playerView;
     private SimpleExoPlayer player;
+    private List<Movie> movies;
+    private int currentMovieIndex;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,11 +94,15 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            @Override
+            public void onPlaybackStateChanged(int playbackState) {
+                if (playbackState == Player.STATE_ENDED) {
+                    showNextMoviePrompt();
+                }
+            }
         });
-
     }
-
-
     @Override
     protected void onStop() {
         super.onStop();
@@ -179,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         protected void onPostExecute(List<Movie> movies) {
-            // Use the movies to populate an AlertDialog
+            MainActivity.this.movies = movies;
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("Select a Movie");
 
@@ -191,18 +198,8 @@ public class MainActivity extends AppCompatActivity {
             builder.setItems(sequence, (dialog, which) -> {
                 try {
                     Movie selectedMovie = movies.get(which);
-                    MediaItem mediaItem = MediaItem.fromUri(Uri.parse(selectedMovie.getStream()));
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            player.setMediaItem(mediaItem);
-                            player.prepare();
-                            player.play();
-                        }
-                    });
-
-                    movieTitle.setText(selectedMovie.getTitle());
+                    currentMovieIndex = which;
+                    playMovie(selectedMovie);
                 } catch (Exception e) {
                     showError("Error", e.getMessage());
                 }
@@ -240,6 +237,41 @@ public class MainActivity extends AppCompatActivity {
         searchEditText.setVisibility(View.VISIBLE);
         movieTitle.setVisibility(View.VISIBLE);
         searchEditText.requestFocus();
+    }
+
+    private void playNextMovie() {
+        currentMovieIndex++;
+        if (currentMovieIndex < movies.size()) {
+            playMovie(movies.get(currentMovieIndex));
+        } else {
+            showError("End of list", "You've reached the end of the movie list.");
+        }
+    }
+
+    private void playMovie(Movie movie) {
+        MediaItem mediaItem = MediaItem.fromUri(Uri.parse(movie.getStream()));
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                player.setMediaItem(mediaItem);
+                player.prepare();
+                player.play();
+            }
+        });
+        movieTitle.setText(movie.getTitle());
+    }
+
+    private void showNextMoviePrompt() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("Play next movie?");
+        builder.setMessage("Would you like to play the next movie?");
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                playNextMovie();
+            }
+        });
+        builder.setNegativeButton("No", null);
+        builder.show();
     }
 }
 
