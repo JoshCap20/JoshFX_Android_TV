@@ -51,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Movie> movies;
     private int currentMovieIndex;
 
+    private long currentPosition = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,10 +61,6 @@ public class MainActivity extends AppCompatActivity {
         searchButton = findViewById(R.id.btnSearch);
         movieTitle = findViewById(R.id.movieTitle);
         playerView = findViewById(R.id.player_view);
-
-        playerView.setKeepScreenOn(true);
-        player = new SimpleExoPlayer.Builder(this).build();
-        playerView.setPlayer(player);
 
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(this,
                 Util.getUserAgent(this, "JoshFX"));
@@ -78,6 +76,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+    }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        player = new SimpleExoPlayer.Builder(this).build();
+        playerView.setPlayer(player);
+        if (currentPosition != 0) {
+            player.seekTo(currentPosition);
+            player.prepare();
+            player.play();
+        }
         player.addListener(new Player.Listener() {
             public void onPlayerError(ExoPlaybackException error) {
                 if (error.type == ExoPlaybackException.TYPE_SOURCE) {
@@ -98,11 +108,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPlaybackStateChanged(int playbackState) {
                 if (playbackState == Player.STATE_ENDED) {
+                    currentPosition = 0;
                     showNextMoviePrompt();
                 }
             }
         });
     }
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -112,6 +124,22 @@ public class MainActivity extends AppCompatActivity {
             player = null;
         }
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        currentPosition = player.getCurrentPosition();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (currentPosition != 0) {
+            player.seekTo(currentPosition);
+            player.prepare();
+        }
+    }
+
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -244,12 +272,13 @@ public class MainActivity extends AppCompatActivity {
         if (currentMovieIndex < movies.size()) {
             playMovie(movies.get(currentMovieIndex));
         } else {
-            showError("End of list", "You've reached the end of the movie list.");
+            showError("End of list", "You've reached the end of the current movie list.");
         }
     }
 
     private void playMovie(Movie movie) {
-        MediaItem mediaItem = MediaItem.fromUri(Uri.parse(movie.getStream()));
+        playerView.setKeepScreenOn(true);
+        MediaItem mediaItem = MediaItem.fromUri(Uri.parse(movie.getLink()));
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -262,7 +291,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showNextMoviePrompt() {
+        playerView.setKeepScreenOn(false);
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
         builder.setTitle("Play next movie?");
         builder.setMessage("Would you like to play the next movie?");
         builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
